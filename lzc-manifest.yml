@@ -1,0 +1,67 @@
+application:
+  subdomain: joomla
+  multi_instance: false
+  upstreams:
+    - location: /package-licenses/
+      backend: file:///lzcapp/pkg/content/licenses/
+    - location: /
+      backend: http://joomla:80/
+
+services:
+  db:
+    image: docker.1ms.run/library/mariadb:10.11
+    environment:
+      - MARIADB_ROOT_PASSWORD={{ stable_secret "joomla_db_root" | replace "\r" "" | replace "\n" "" }}
+      - MARIADB_DATABASE=joomla
+      - MARIADB_USER=joomla
+      - |-
+        MARIADB_PASSWORD={{ stable_secret "joomla_db_password" | replace "\r" "" | replace "\n" "" }}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mariadb-admin ping -h 127.0.0.1 -u root -p"$$MARIADB_ROOT_PASSWORD"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    binds:
+      - /lzcapp/var/db:/var/lib/mysql
+
+  joomla:
+    # upstream: library/joomla:6.2.0
+    image: docker.1ms.run/library/joomla:6.2.0
+    depends_on:
+      - db
+    environment:
+      - JOOMLA_DB_HOST=db
+      - JOOMLA_DB_PORT=3306
+      - JOOMLA_DB_NAME=joomla
+      - JOOMLA_DB_USER=joomla
+      - |-
+        JOOMLA_DB_PASSWORD={{ stable_secret "joomla_db_password" | replace "\r" "" | replace "\n" "" }}
+      - JOOMLA_DB_TYPE=mysqli
+      - JOOMLA_INSTALLATION_DISABLE_LOCALHOST_CHECK=1
+      - TZ=Asia/Shanghai
+    binds:
+      - /lzcapp/var/html:/var/www/html
+
+usage: |
+  Joomla 是成熟的内容管理系统：后台建栏目、发文、装模板和插件，适合搭企业站或门户。
+
+  使用方法：
+  1. 打开应用，会进入安装向导。
+  2. 数据库那一步选 MySQLi，主机填 db，库名 joomla，用户名 joomla，
+     密码见安装参数里的"数据库密码"（也可以在下面直接看）。
+  3. 接着填写站点名称和管理员账号密码，完成安装后删除 installation 目录即可。
+
+  数据与安全：
+  - 数据库在 MariaDB（/lzcapp/var/db），站点文件在 /lzcapp/var/html。卸载应用会一并删除，请定期备份。
+  - 数据库密码由平台稳定密钥生成，每个部署不同，不写成固定值。
+  - 本包不预置任何 Joomla 账号或默认口令；管理员账号由安装向导创建。
+  - 应用经懒猫入口鉴权访问。
+
+  说明：
+  - 本应用包含两个容器（Joomla + MariaDB），启动顺序由依赖关系保证。
+  - 安装完成后建议在后台把"网站离线"关掉，否则前台会显示维护页。
+  - 未配置邮件服务，注册验证、找回密码等依赖邮件的功能不可用。
+  - 未做真机验证：安装向导、后台登录、发文、装模板以及重启后持久化均未在设备上实测。

@@ -1,0 +1,12 @@
+params:
+  - id: db_password
+    type: secret
+    name: Database password
+    description: "Password for the joomla database user. Enter this same value on the Joomla installer's database step."
+    default_value: "$random(len=20)"
+    optional: false
+locales:
+  zh:
+    db_password:
+      name: 数据库密码
+      description: joomla 数据库用户的密码。安装向导的数据库那一步要填这个值。
