@@ -1,6 +1,10 @@
 application:
   subdomain: joomla
   multi_instance: false
+  # This app authenticates its own users, so it is exposed directly
+  # instead of sitting behind the platform login gate.
+  public_path:
+    - /
   upstreams:
     - location: /package-licenses/
       backend: file:///lzcapp/pkg/content/licenses/
@@ -58,7 +62,8 @@ usage: |
   - 数据库在 MariaDB（/lzcapp/var/db），站点文件在 /lzcapp/var/html。卸载应用会一并删除，请定期备份。
   - 数据库密码由平台稳定密钥生成，每个部署不同，不写成固定值。
   - 本包不预置任何 Joomla 账号或默认口令；管理员账号由安装向导创建。
-  - 应用经懒猫入口鉴权访问。
+  - 应用直接对外开放，由应用自己的登录页鉴权：
+    自带账号体系的服务再套一层平台鉴权会造成重复登录，所以用 public_path。
 
   说明：
   - 本应用包含两个容器（Joomla + MariaDB），启动顺序由依赖关系保证。
